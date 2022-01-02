@@ -4,16 +4,13 @@
 
 import dynamics from 'dynamics.js'
 import { React } from 'uebersicht'
-const { useEffect } = React
+const { useEffect, useRef } = React
 
 // You can modify this widget as you see fit, or simply delete this file to
 // remove it.
 
-// this is the shell command that gets executed every time this widget refreshes
-export const command = 'whoami'
-
 // the refresh frequency in milliseconds
-export const refreshFrequency = 1000000
+export const refreshFrequency = 100_0000
 
 // the CSS style for this widget, written using Emotion
 // https://emotion.sh/
@@ -190,114 +187,117 @@ circle {
   }
 }
 `
-
+export const render = () => <App />
 // render gets called after the shell command has executed. The command's output
 // is passed in as a string.
-export const render = ({ output }) => {
-  /**
-   * @type {HTMLDivElement}
-   */
-  const $minute = document.querySelector('.minute-hand')
-  /**
-   * @type {HTMLDivElement}
-   */
-  const $hour = document.querySelector('.hour-hand')
-  /**
-   * @type {HTMLDivElement}
-   */
-  const $second = document.querySelector('.second-hand')
-  const animateEls = [$hour, $minute, $second]
+export const App = () => {
+  const timer = useRef(null)
+  useEffect(() => {
+    /**
+     * @type {HTMLDivElement}
+     */
+    const $minute = document.querySelector('.minute-hand')
+    /**
+     * @type {HTMLDivElement}
+     */
+    const $hour = document.querySelector('.hour-hand')
+    /**
+     * @type {HTMLDivElement}
+     */
+    const $second = document.querySelector('.second-hand')
 
-  // 摆动指针
-  function springHand(el, deg) {
-    dynamics.animate(
-      el,
-      {
-        rotateZ: deg,
-      },
-      { frequency: 500, type: dynamics.spring },
-    )
-  }
-  // 初始动画
-  function doAnimate() {
-    const $root = document.querySelector('.clock-root .point')
-    dynamics.animate(
-      $root,
-      {
-        scale: 3,
-      },
-      {
-        type: dynamics.spring,
-        frequency: 550,
-        friction: 120,
-        duration: 1500,
-        delay: 100,
-      },
-    )
-  }
-  let timer
-
-  function init() {
-    doAnimate()
-
-    const time = new Date()
-    const minute = time.getMinutes()
-    const second = time.getSeconds()
-    const hour = time.getHours()
-
-    let minuteDeg = 180 + (360 / 60) * minute + (360 / 3600) * second
-    let secondDeg = 180 + (360 / 60) * second
-    let hourDeg =
-      180 + (360 / 12) * hour + (360 / 720) * second + (360 / 43200) * minute
-
-    const $time = document.getElementById('time')
-    // 每秒动画
-    function setTime() {
-      springHand($minute, minuteDeg)
-      springHand($hour, hourDeg)
-      springHand($second, secondDeg)
-
-      secondDeg += 360 / 60
-      minuteDeg += 360 / 3600
-      hourDeg += 360 / 43200
-
-      const second = ((30 + secondDeg / 6) | 0) % 60
-      const minute = ((30 + minuteDeg / 6) | 0) % 60
-      const hour = ((6 + hourDeg / 30) | 0) % 12
-
-      $time.innerText = `${hour}:${minute.toString().padStart(2, '0')}:${second
-        .toString()
-        .padStart(2, '0')}`
+    // 摆动指针
+    function springHand(el, deg) {
+      dynamics.animate(
+        el,
+        {
+          rotateZ: deg,
+        },
+        { frequency: 500, type: dynamics.spring },
+      )
+    }
+    // 初始动画
+    function doAnimate() {
+      const $root = document.querySelector('.clock-root .point')
+      dynamics.animate(
+        $root,
+        {
+          scale: 3,
+        },
+        {
+          type: dynamics.spring,
+          frequency: 550,
+          friction: 120,
+          duration: 1500,
+          delay: 100,
+        },
+      )
     }
 
-    setTime()
-    timer = setInterval(setTime, 1000)
-  }
-  // 重置函数
-  function reset() {
-    animateEls.map(($) => {
-      dynamics.stop($)
+    function init() {
+      doAnimate()
+      const $time = document.getElementById('time')
+
+      const time = new Date()
+      const minute = time.getMinutes()
+      const second = time.getSeconds()
+      const hour = time.getHours()
+
+      let minuteDeg =
+        180 + 6 /* 360 / 60 */ * minute + 0.1 /* 360 / 3600 */ * second
+      let secondDeg = 180 + 6 /* 360 / 60 */ * second
+      let hourDeg =
+        180 +
+        30 /* 360 / 12 */ * hour +
+        0.5 /* 360 / 720 */ * second +
+        0.00833333 /* 360 / 43200 */ * minute
+
+      // 每秒动画
+      function setTime() {
+        springHand($minute, minuteDeg)
+        springHand($hour, hourDeg)
+        springHand($second, secondDeg)
+
+        const second = ((30 + secondDeg / 6) | 0) % 60
+        const minute = ((30 + minuteDeg / 6) | 0) % 60
+        const hour = ((6 + hourDeg / 30) | 0) % 12
+
+        $time.innerText = `${hour}:${minute
+          .toString()
+          .padStart(2, '0')}:${second.toString().padStart(2, '0')}`
+        // // 下一秒
+        secondDeg += 6 // 360 / 60
+        minuteDeg += 0.1 // 360 / 3600
+        hourDeg += 0.00833333 // 360 / 43200
+      }
+
+      setTime()
+      let t = performance.now()
+      timer.current = setTimeout(function loop() {
+        setTime()
+
+        const now = performance.now()
+        // console.log(2000 - now + t) // 1000 - (now - t - 1000)
+        timer.current = setTimeout(loop, 2000 - now + t)
+        t = performance.now()
+      }, 1000)
+    }
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState == 'visible') {
+        timer.current = clearTimeout(timer.current)
+        requestAnimationFrame(() => {
+          init()
+        })
+      }
     })
-    timer = clearInterval(timer)
-  }
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState == 'hidden') {
-      reset()
-    }
-
-    if (document.visibilityState == 'visible') {
+    requestAnimationFrame(() => {
       init()
+    })
+    return () => {
+      clearTimeout(timer.current)
     }
-  })
-
-  setTimeout(() => {
-    init()
-  })
-  // 5 分钟同步
-  setTimeout(() => {
-    reset()
-    init()
-  }, 300000)
+  }, [])
 
   return (
     <div className="wrap">

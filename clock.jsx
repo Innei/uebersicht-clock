@@ -10,7 +10,7 @@ const { useEffect, useRef } = React
 // remove it.
 
 // the refresh frequency in milliseconds
-export const refreshFrequency = 0
+// export const refreshFrequency = 0
 
 // the CSS style for this widget, written using Emotion
 // https://emotion.sh/
@@ -235,43 +235,42 @@ export const App = () => {
     }
 
     function init() {
+      timer.current = clearTimeout(timer.current)
       doAnimate()
       const $time = document.getElementById('time')
 
-      const time = new Date()
-      const minute = time.getMinutes()
-      const second = time.getSeconds()
-      const hour = time.getHours()
-      const isAM = hour < 12
-
-      let minuteDeg =
-        180 + 6 /* 360 / 60 */ * minute + 0.1 /* 360 / 3600 */ * second
-      let secondDeg = 180 + 6 /* 360 / 60 */ * second
-      let hourDeg =
-        180 +
-        30 /* 360 / 12 */ * hour +
-        0.5 /* 360 / 720 */ * second +
-        0.00833333 /* 360 / 43200 */ * minute
-
       // 每秒动画
       function setTime() {
+        const time = new Date()
+        const minute = time.getMinutes()
+        const second = time.getSeconds()
+        const hour = time.getHours()
+        // const isAM = hour < 12
+
+        const minuteDeg =
+          180 + 6 /* 360 / 60 */ * minute + 0.1 /* 360 / 3600 */ * second
+        const secondDeg = 180 + 6 /* 360 / 60 */ * second
+        const hourDeg =
+          180 +
+          30 /* 360 / 12 */ * hour +
+          0.5 /* 360 / 720 */ * second +
+          0.00833333 /* 360 / 43200 */ * minute
+
         springHand($minute, minuteDeg)
         springHand($hour, hourDeg)
         springHand($second, secondDeg)
 
-        const second = ((30 + secondDeg / 6) | 0) % 60
-        const minute = ((30 + minuteDeg / 6) | 0) % 60
-        const hour = ((6 + hourDeg / 30) | 0) % 12
+        // const second = ((30 + secondDeg / 6) | 0) % 60
+        // const minute = ((30 + minuteDeg / 6) | 0) % 60
+        // const hour = ((6 + hourDeg / 30) | 0) % 12
 
-        $time.innerText = `${
-          hour === 0 ? (isAM ? 12 : 0) : isAM ? hour : hour + 12
-        }:${minute.toString().padStart(2, '0')}:${second
+        $time.innerText = `${hour}:${minute
           .toString()
-          .padStart(2, '0')}`
+          .padStart(2, '0')}:${second.toString().padStart(2, '0')}`
         // // 下一秒
-        secondDeg += 6 // 360 / 60
-        minuteDeg += 0.1 // 360 / 3600
-        hourDeg += 0.00833333 // 360 / 43200
+        // secondDeg += 6 // 360 / 60
+        // minuteDeg += 0.1 // 360 / 3600
+        // hourDeg += 0.00833333 // 360 / 43200
       }
 
       setTime()

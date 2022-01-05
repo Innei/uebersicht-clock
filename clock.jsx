@@ -10,7 +10,7 @@ const { useEffect, useRef } = React
 // remove it.
 
 // the refresh frequency in milliseconds
-export const refreshFrequency = 100_0000
+export const refreshFrequency = 0
 
 // the CSS style for this widget, written using Emotion
 // https://emotion.sh/
@@ -242,6 +242,7 @@ export const App = () => {
       const minute = time.getMinutes()
       const second = time.getSeconds()
       const hour = time.getHours()
+      const isAM = hour < 12
 
       let minuteDeg =
         180 + 6 /* 360 / 60 */ * minute + 0.1 /* 360 / 3600 */ * second
@@ -262,9 +263,11 @@ export const App = () => {
         const minute = ((30 + minuteDeg / 6) | 0) % 60
         const hour = ((6 + hourDeg / 30) | 0) % 12
 
-        $time.innerText = `${hour}:${minute
+        $time.innerText = `${
+          hour === 0 ? (isAM ? 12 : 0) : isAM ? hour : hour + 12
+        }:${minute.toString().padStart(2, '0')}:${second
           .toString()
-          .padStart(2, '0')}:${second.toString().padStart(2, '0')}`
+          .padStart(2, '0')}`
         // // 下一秒
         secondDeg += 6 // 360 / 60
         minuteDeg += 0.1 // 360 / 3600
@@ -273,13 +276,16 @@ export const App = () => {
 
       setTime()
       let t = performance.now()
+      let o = t
+      let count = 0
       timer.current = setTimeout(function loop() {
         setTime()
-
         const now = performance.now()
-        // console.log(2000 - now + t) // 1000 - (now - t - 1000)
-        timer.current = setTimeout(loop, 2000 - now + t)
-        t = performance.now()
+        const offset = (now - t) / count / 1000
+        // console.log(offset, now - o) // 1000 - (now - t - 1000)
+        timer.current = setTimeout(loop, 1000 - offset)
+        count++
+        o = now
       }, 1000)
     }
 
@@ -294,6 +300,9 @@ export const App = () => {
     requestAnimationFrame(() => {
       init()
     })
+    setInterval(() => {
+      init()
+    }, 1000 * 60 * 15)
     return () => {
       clearTimeout(timer.current)
     }

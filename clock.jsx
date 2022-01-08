@@ -253,8 +253,8 @@ export const App = () => {
         const hourDeg =
           180 +
           30 /* 360 / 12 */ * hour +
-          0.5 /* 360 / 720 */ * second +
-          0.00833333 /* 360 / 43200 */ * minute
+          0.5 /* 360 / 720 */ * minute +
+          0.00833333 /* 360 / 43200 */ * second
 
         springHand($minute, minuteDeg)
         springHand($hour, hourDeg)
